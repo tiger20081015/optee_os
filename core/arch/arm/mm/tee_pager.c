@@ -1345,7 +1345,6 @@ static bool pager_update_permissions(struct tee_pager_area *area,
 	} else {
 		if (!(attr & TEE_MATTR_PR)) {
 			abort_print_error(ai);
-			panic();
 		}
 	}
 
@@ -1360,7 +1359,6 @@ static bool pager_update_permissions(struct tee_pager_area *area,
 			} else {
 				if (!(attr & TEE_MATTR_PX)) {
 					abort_print_error(ai);
-					panic();
 				}
 			}
 		}
@@ -1386,7 +1384,6 @@ static bool pager_update_permissions(struct tee_pager_area *area,
 		} else {
 			if (!(area->flags & TEE_MATTR_PW)) {
 				abort_print_error(ai);
-				panic();
 			}
 			if (!(attr & TEE_MATTR_PW)) {
 				FMSG("Dirty %p",
@@ -1404,7 +1401,6 @@ static bool pager_update_permissions(struct tee_pager_area *area,
 		if (abort_is_user_exception(ai))
 			return true;
 		abort_print_error(ai);
-		panic();
 	}
 	*handled = true;
 	return true;

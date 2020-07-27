@@ -222,8 +222,13 @@ static void __abort_print(struct abort_info *ai, bool stack_dump)
 
 	__print_abort_info(ai, "Core");
 
-	if (stack_dump)
+	if (stack_dump) {
+		/* disable prehemption */
+		(void)thread_mask_exceptions(THREAD_EXCP_ALL);
 		__print_stack_unwind(ai);
+		while(1);
+	}
+
 }
 
 void abort_print(struct abort_info *ai)
@@ -458,30 +463,30 @@ static enum fault_type get_fault_type(struct abort_info *ai)
 	}
 
 	if (thread_is_from_abort_mode()) {
+		EMSG("[abort] abort in abort handler (trap CPU)");
 		abort_print_error(ai);
-		panic("[abort] abort in abort handler (trap CPU)");
 	}
 
 	if (ai->abort_type == ABORT_TYPE_UNDEF) {
 		if (abort_is_user_exception(ai))
 			return FAULT_TYPE_USER_TA_PANIC;
+		EMSG("[abort] undefined abort (trap CPU)");
 		abort_print_error(ai);
-		panic("[abort] undefined abort (trap CPU)");
 	}
 
 	switch (core_mmu_get_fault_type(ai->fault_descr)) {
 	case CORE_MMU_FAULT_ALIGNMENT:
 		if (abort_is_user_exception(ai))
 			return FAULT_TYPE_USER_TA_PANIC;
+		EMSG("[abort] alignement fault!  (trap CPU)");
 		abort_print_error(ai);
-		panic("[abort] alignement fault!  (trap CPU)");
 		break;
 
 	case CORE_MMU_FAULT_ACCESS_BIT:
 		if (abort_is_user_exception(ai))
 			return FAULT_TYPE_USER_TA_PANIC;
+		EMSG("[abort] access bit fault!  (trap CPU)");
 		abort_print_error(ai);
-		panic("[abort] access bit fault!  (trap CPU)");
 		break;
 
 	case CORE_MMU_FAULT_DEBUG_EVENT:
@@ -534,16 +539,16 @@ void abort_handler(uint32_t abort_type, struct thread_abort_regs *regs)
 	case FAULT_TYPE_PAGEABLE:
 	default:
 		if (thread_get_id_may_fail() < 0) {
+			EMSG("abort outside thread context");
 			abort_print_error(&ai);
-			panic("abort outside thread context");
 		}
 		thread_kernel_save_vfp();
 		handled = tee_pager_handle_fault(&ai);
 		thread_kernel_restore_vfp();
 		if (!handled) {
 			if (!abort_is_user_exception(&ai)) {
+				EMSG("unhandled pageable abort");
 				abort_print_error(&ai);
-				panic("unhandled pageable abort");
 			}
 			DMSG("[abort] abort in User mode (TA will panic)");
 			save_abort_info_in_tsd(&ai);
